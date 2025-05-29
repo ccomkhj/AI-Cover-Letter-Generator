@@ -1,0 +1,46 @@
+ALEX RODRIGUEZ
+alex.rodriguez@email.com | (555) 123-4567 | linkedin.com/in/alexrodriguez
+
+SUMMARY
+Innovative Software Engineer with 5 years of experience developing AI/ML applications. Proficient in Python, TensorFlow, and PyTorch with a proven track record of deploying scalable machine learning solutions. Strong background in computer vision and natural language processing.
+
+WORK EXPERIENCE
+
+SENIOR ML ENGINEER | TECHVISION INC. | JAN 2021 - PRESENT
+- Led the development of a computer vision system that improved product defect detection by 40%
+- Implemented and optimized deep learning models for real-time video analysis
+- Collaborated with cross-functional teams to integrate ML solutions into existing products
+- Mentored junior engineers on ML best practices and deployment strategies
+
+SOFTWARE ENGINEER | DATASCOPE ANALYTICS | MAR 2018 - DEC 2020
+- Developed NLP algorithms for sentiment analysis in customer feedback data
+- Built and maintained data pipelines for model training and evaluation
+- Implemented CI/CD workflows for ML model deployment
+- Reduced inference time by 35% through model optimization techniques
+
+EDUCATION
+MASTER OF SCIENCE IN COMPUTER SCIENCE | STANFORD UNIVERSITY | 2018
+Focus: Machine Learning and Artificial Intelligence
+
+BACHELOR OF SCIENCE IN COMPUTER ENGINEERING | UNIVERSITY OF MICHIGAN | 2016
+
+SKILLS
+- Programming: Python, Java, C++
+- ML Frameworks: TensorFlow, PyTorch, scikit-learn
+- Cloud: AWS (SageMaker, Lambda, EC2), GCP
+- DevOps: Docker, Kubernetes, CI/CD
+- Data Processing: Pandas, NumPy, Spark
+- Version Control: Git
+- Specialties: Computer Vision, NLP, Reinforcement Learning
+
+PROJECTS
+- AUTONOMOUS DRONE NAVIGATION
+  Developed a deep reinforcement learning system for drone navigation in complex environments
+  
+- MULTILINGUAL CHATBOT
+  Created an NLP-based customer service chatbot supporting 5 languages with 92% accuracy
+
+CERTIFICATIONS
+- AWS Certified Machine Learning - Specialty
+- Google Professional Machine Learning Engineer
+- Deep Learning Specialization (Coursera)

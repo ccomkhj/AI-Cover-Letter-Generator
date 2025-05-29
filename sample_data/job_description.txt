@@ -1,0 +1,28 @@
+Software Engineer - AI/ML Team
+
+About the Role:
+We are looking for a Software Engineer specializing in AI/ML to join our growing team. The ideal candidate will have experience developing and deploying machine learning models, along with strong software engineering skills.
+
+Responsibilities:
+- Design, develop, and maintain AI/ML systems and applications
+- Collaborate with data scientists to implement and scale machine learning models
+- Write clean, efficient, and maintainable code
+- Optimize algorithms for maximum performance
+- Work with product teams to understand requirements and implement solutions
+- Stay up-to-date with the latest developments in AI/ML technologies
+
+Requirements:
+- Bachelor's degree or higher in Computer Science, Engineering, or a related field
+- 3+ years of experience in software development
+- Experience with Python and ML frameworks such as TensorFlow, PyTorch, or scikit-learn
+- Knowledge of software engineering best practices
+- Strong problem-solving skills and attention to detail
+- Excellent communication and teamwork abilities
+
+Preferred Qualifications:
+- Experience with cloud platforms (AWS, GCP, Azure)
+- Knowledge of containerization and orchestration (Docker, Kubernetes)
+- Understanding of DevOps principles
+- Experience with NLP or computer vision applications
+
+We offer competitive salary, benefits, and the opportunity to work on cutting-edge AI technologies in a collaborative environment.
