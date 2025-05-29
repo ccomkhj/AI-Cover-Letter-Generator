@@ -35,6 +35,10 @@ This project is for you!
      DEEPSEEK_API_KEY=your_deepseek_api_key
      ```
 
+## Demo
+
+![Cover Letter Generator Demo](/sample_data/demo.png)
+
 ## Usage
 
 1. Run the Streamlit application:
