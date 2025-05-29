@@ -22,6 +22,10 @@ if 'update_success' not in st.session_state:
     
 if 'update_error' not in st.session_state:
     st.session_state['update_error'] = ""
+    
+# Additional session state variables for the agentic workflow
+if 'generation_stage' not in st.session_state:
+    st.session_state['generation_stage'] = "idle"  # idle, generating, analyzing, improving, done
 
 # Function to update cover letter based on feedback
 def update_cover_letter():
@@ -197,61 +201,93 @@ def main():
             if not job_description:
                 st.error("Please provide a job description")
             else:
-                with st.spinner("Generating your cover letter..."):
-                    # Create generator instance
-                    generator = CoverLetterGenerator(
-                        provider=model_provider.lower().replace(" ", "_"),
-                        model=model_name
+                # Start the agentic workflow for cover letter generation
+                st.session_state['generation_stage'] = "generating"
+                
+                # Create a placeholder for the progress messages
+                progress_placeholder = st.empty()
+                
+                # Step 1: Initial setup
+                progress_placeholder.info("Step 1/4: Setting up the cover letter generator...")
+                
+                # Create generator instance
+                generator = CoverLetterGenerator(
+                    provider=model_provider.lower().replace(" ", "_"),
+                    model=model_name
+                )
+                
+                # Set tone
+                selected_tone = custom_tone if tone == "Custom" else tone
+                
+                # Generate cover letter with the agentic workflow
+                with st.spinner("Generating your personalized cover letter..."):
+                    # Step 2: Research company and generate initial letter
+                    progress_placeholder.info("Step 2/4: Generating initial cover letter...")
+                    
+                    # Research company information if enabled
+                    company_info = ""
+                    if enable_research:
+                        company_info = generator._research_company_info(job_description)
+                    
+                    # Generate initial cover letter
+                    initial_letter = generator._initial_generation(job_description, personal_history, selected_tone, company_info)
+                    
+                    # Step 3: Analyze for missing information
+                    progress_placeholder.info("Step 3/4: Analyzing for missing information...")
+                    
+                    # Extract key skills from personal history
+                    skills_list = generator._extract_key_skills_from_personal_history(personal_history)
+                    
+                    # Identify missing skills in the cover letter
+                    missing_skills = generator._identify_missing_skills(initial_letter, skills_list)
+                    
+                    # Step 4: Improve the cover letter
+                    progress_placeholder.info("Step 4/4: Enhancing your cover letter...")
+                    
+                    # Self-improvement to address missing skills and add company information
+                    cover_letter = generator._self_improvement(initial_letter, job_description, personal_history, selected_tone, missing_skills, company_info)
+                
+                # Update completion message
+                progress_placeholder.success("✅ Cover letter generation complete! Agentic workflow successfully enhanced your letter.")
+                
+                # Store the generated cover letter in session state
+                st.session_state['cover_letter'] = cover_letter
+                st.session_state['original_job_description'] = job_description
+                st.session_state['original_personal_history'] = personal_history
+                st.session_state['original_tone'] = selected_tone
+                st.session_state['provider'] = model_provider.lower().replace(" ", "_")
+                st.session_state['model'] = model_name
+                st.session_state['has_generated'] = True  # Flag to track if a letter has been generated
+                st.session_state['generation_stage'] = "done"
+                
+                # Clear any previously updated letter
+                st.session_state['updated_cover_letter'] = ""
+                
+                # Download options
+                col1_download, col2_download = st.columns(2)
+                
+                with col1_download:
+                    # Text download option
+                    st.download_button(
+                        label="Download as Text",
+                        data=cover_letter,
+                        file_name="cover_letter.txt",
+                        mime="text/plain",
+                        use_container_width=True,
+                        key="download_original_text_generation"
                     )
-                    
-                    # Set tone
-                    selected_tone = custom_tone if tone == "Custom" else tone
-                    
-                    # Generate cover letter with optional company research
-                    cover_letter = generator.generate(
-                        job_description=job_description,
-                        personal_history=personal_history,
-                        tone=selected_tone,
-                        research_company=enable_research
+                
+                with col2_download:
+                    # PDF download option with nice formatting
+                    pdf_buffer = generate_cover_letter_pdf(cover_letter)
+                    st.download_button(
+                        label="Download as PDF",
+                        data=pdf_buffer,
+                        file_name="cover_letter.pdf",
+                        mime="application/pdf",
+                        use_container_width=True,
+                        key="download_original_pdf_generation"
                     )
-                    
-                    # Store the generated cover letter in session state
-                    st.session_state['cover_letter'] = cover_letter
-                    st.session_state['original_job_description'] = job_description
-                    st.session_state['original_personal_history'] = personal_history
-                    st.session_state['original_tone'] = selected_tone
-                    st.session_state['provider'] = model_provider.lower().replace(" ", "_")
-                    st.session_state['model'] = model_name
-                    st.session_state['has_generated'] = True  # Flag to track if a letter has been generated
-                    
-                    # Clear any previously updated letter
-                    st.session_state['updated_cover_letter'] = ""
-                    
-                    # Download options
-                    col1_download, col2_download = st.columns(2)
-                    
-                    with col1_download:
-                        # Text download option
-                        st.download_button(
-                            label="Download as Text",
-                            data=cover_letter,
-                            file_name="cover_letter.txt",
-                            mime="text/plain",
-                            use_container_width=True,
-                            key="download_original_text_generation"
-                        )
-                    
-                    with col2_download:
-                        # PDF download option with nice formatting
-                        pdf_buffer = generate_cover_letter_pdf(cover_letter)
-                        st.download_button(
-                            label="Download as PDF",
-                            data=pdf_buffer,
-                            file_name="cover_letter.pdf",
-                            mime="application/pdf",
-                            use_container_width=True,
-                            key="download_original_pdf_generation"
-                        )
                         
         # Display the cover letter(s)
         if st.session_state.get('has_generated', False):
@@ -321,6 +357,12 @@ def main():
             # Feedback section for refinement
             st.subheader("Refine Your Cover Letter")
             st.write("Not satisfied? Provide feedback to update your cover letter.")
+            st.info("""Your cover letter has already been enhanced through our agentic workflow, which:
+1. Generated an initial cover letter based on your inputs
+2. Identified and added missing skills from your personal history
+3. Incorporated relevant company information (if enabled)
+
+Any feedback you provide will further refine this already-enhanced letter.""")
             
             # Display success message if update was successful
             if st.session_state.get('update_success', False):
@@ -344,7 +386,18 @@ def main():
             
             # Create a button that calls the update function directly
             if st.button("Update Cover Letter", use_container_width=True, key="update_button"):
-                update_cover_letter()
+                if st.session_state.get('feedback_text', "").strip():
+                    # Create a placeholder for the update progress
+                    update_progress = st.empty()
+                    update_progress.info("Updating your cover letter based on feedback...")
+                    
+                    # Call the update function
+                    update_cover_letter()
+                    
+                    # Clear the progress message (success message is shown in update_cover_letter function)
+                    update_progress.empty()
+                else:
+                    st.warning("Please provide feedback to update your cover letter")
 
 if __name__ == "__main__":
     main()
