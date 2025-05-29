@@ -3,6 +3,8 @@ from langchain_community.chat_models import ChatOpenAI
 from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain_deepseek import ChatDeepSeek
 from langchain.schema.output_parser import StrOutputParser
+from company_research_agent import CompanyResearchAgent
+import prompt
 
 class CoverLetterGenerator:
     """
@@ -35,21 +37,9 @@ class CoverLetterGenerator:
     
     def _create_system_prompt(self, tone):
         """Create a system prompt based on the specified tone."""
-        base_prompt = "You are an expert cover letter writer who crafts personalized and effective cover letters. Keep it informal and friendly."
-        
-        tone_prompts = {
-            "Enthusiastic": "Write with enthusiasm and passion that demonstrates excitement for the position.",
-            "Confident": "Write with confidence and authority that emphasizes achievements and capabilities.",
-            "Concise": "Write a brief but impactful cover letter that gets straight to the point."
-        }
-        
-        if tone in tone_prompts:
-            return f"{base_prompt} {tone_prompts[tone]}"
-        else:
-            # For custom tone or any other tone not in the predefined list
-            return f"{base_prompt} Write in a {tone} tone that resonates with the employer."
+        return prompt.create_system_prompt_with_tone(tone)
     
-    def generate(self, job_description, personal_history, tone="Enthusiastic"):
+    def generate(self, job_description, personal_history, tone="Enthusiastic", research_company=True):
         """
         Generate a cover letter based on the job description and personal history.
         
@@ -57,42 +47,59 @@ class CoverLetterGenerator:
             job_description (str): The job description text
             personal_history (str): The applicant's personal history/resume text
             tone (str): The desired tone for the cover letter
+            research_company (bool): Whether to research company information
             
         Returns:
             str: The generated cover letter
         """
-        # Create the prompt template
-        prompt = ChatPromptTemplate.from_messages([
-            ("system", self._create_system_prompt(tone)),
-            ("human", """
-            Please generate a cover letter for the job described below.
-            
-            # Job Description:
-            {job_description}
-            
-            # My Personal History/Resume:
-            {personal_history}
-            
-            Generate a well-structured cover letter that:
-            1. Begin with eye-catching start. (Cut to the chase.)
-            2. Highlights my relevant skills and experiences that match the job requirements
-            3. Explains why I'm a good fit for the role and the company
-            4. Concludes with what I want to do with your company
-            
-            The letter should be concise (less than 300 words), engaging, and tailored specifically to this job opportunity.
-            """)
-        ])
+        # Research company information if enabled
+        company_info = ""
+        if research_company:
+            try:
+                # Create company research agent with the same LLM settings
+                research_agent = CompanyResearchAgent(provider=self.provider, model=self.model)
+                
+                # Research the company based on the job description
+                research_results = research_agent.research_company(job_description=job_description)
+                
+                if research_results.get("success", False):
+                    company_info = research_results.get("company_info", "")
+            except Exception as e:
+                print(f"Error researching company: {str(e)}")
         
-        # Create the chain
-        chain = prompt | self.llm | StrOutputParser()
+        # Create the prompt template with company information if available
+        if company_info:
+            prompt_template = ChatPromptTemplate.from_messages([
+                ("system", self._create_system_prompt(tone)),
+                ("human", prompt.COVER_LETTER_WITH_COMPANY_INFO_PROMPT)
+            ])
+            
+            # Create the chain
+            chain = prompt | self.llm | StrOutputParser()
+            
+            # Generate the cover letter with company information
+            return chain.invoke({
+                "job_description": job_description,
+                "personal_history": personal_history,
+                "company_info": company_info
+            })
+        else:
+            # Create the prompt template without company information
+            prompt_template = ChatPromptTemplate.from_messages([
+                ("system", self._create_system_prompt(tone)),
+                ("human", prompt.COVER_LETTER_WITHOUT_COMPANY_INFO_PROMPT)
+            ])
+            
+            # Create the chain
+            chain = prompt_template | self.llm | StrOutputParser()
+            
+            # Generate the cover letter
+            return chain.invoke({
+                "job_description": job_description,
+                "personal_history": personal_history
+            })
         
-        # Generate the cover letter
-        return chain.invoke({
-            "job_description": job_description,
-            "personal_history": personal_history
-        })
-        
-    def update_with_feedback(self, original_cover_letter, job_description, personal_history, feedback, tone="Enthusiastic"):
+    def update_with_feedback(self, original_cover_letter, job_description, personal_history, feedback, tone="Enthusiastic", research_company=True):
         """
         Update an existing cover letter based on user feedback.
         
@@ -102,45 +109,58 @@ class CoverLetterGenerator:
             personal_history (str): The original personal history/resume text
             feedback (str): User feedback on how to improve the cover letter
             tone (str): The desired tone for the cover letter
+            research_company (bool): Whether to research company information
             
         Returns:
             str: The updated cover letter
         """
-        # Create the prompt template for updating with feedback
-        update_prompt = ChatPromptTemplate.from_messages([
-            ("system", self._create_system_prompt(tone) + " You are refining an existing cover letter based on specific feedback."),
-            ("human", """
-            I have a cover letter that I'd like to improve based on specific feedback.
-            
-            # Original Job Description:
-            {job_description}
-            
-            # My Personal History/Resume:
-            {personal_history}
-            
-            # Current Cover Letter:
-            {original_cover_letter}
-            
-            # My Feedback for Improvement:
-            {feedback}
-            
-            Please update the cover letter according to my feedback while maintaining:
-            1. The relevant match between my skills and the job requirements
-            2. A professional and engaging tone
-            3. A concise structure (still under 300 words)
-            4. The same overall format
-            
-            Return ONLY the complete updated cover letter without explanations or notes.
-            """)
-        ])
+        # Research company information if enabled and not already in feedback
+        company_info = ""
+        if research_company and "company information" in feedback.lower():
+            try:
+                # Create company research agent with the same LLM settings
+                research_agent = CompanyResearchAgent(provider=self.provider, model=self.model)
+                
+                # Research the company based on the job description
+                research_results = research_agent.research_company(job_description=job_description)
+                
+                if research_results.get("success", False):
+                    company_info = research_results.get("company_info", "")
+            except Exception as e:
+                print(f"Error researching company: {str(e)}")
         
-        # Create the chain
-        update_chain = update_prompt | self.llm | StrOutputParser()
-        
-        # Generate the updated cover letter
-        return update_chain.invoke({
-            "original_cover_letter": original_cover_letter,
-            "job_description": job_description,
-            "personal_history": personal_history,
-            "feedback": feedback
-        })
+        # Create the prompt template for updating with feedback, including company info if available
+        if company_info:
+            update_prompt = ChatPromptTemplate.from_messages([
+                ("system", self._create_system_prompt(tone) + " You are refining an existing cover letter based on specific feedback."),
+                ("human", prompt.COVER_LETTER_UPDATE_WITH_COMPANY_INFO_PROMPT)
+            ])
+            
+            # Create the chain
+            update_chain = update_prompt | self.llm | StrOutputParser()
+            
+            # Generate the updated cover letter with company information
+            return update_chain.invoke({
+                "original_cover_letter": original_cover_letter,
+                "job_description": job_description,
+                "personal_history": personal_history,
+                "feedback": feedback,
+                "company_info": company_info
+            })
+        else:
+            # Create the prompt template without company information
+            update_prompt = ChatPromptTemplate.from_messages([
+                ("system", self._create_system_prompt(tone) + " You are refining an existing cover letter based on specific feedback."),
+                ("human", prompt.COVER_LETTER_UPDATE_WITHOUT_COMPANY_INFO_PROMPT)
+            ])
+            
+            # Create the chain
+            update_chain = update_prompt | self.llm | StrOutputParser()
+            
+            # Generate the updated cover letter
+            return update_chain.invoke({
+                "original_cover_letter": original_cover_letter,
+                "job_description": job_description,
+                "personal_history": personal_history,
+                "feedback": feedback
+            })

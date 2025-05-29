@@ -11,6 +11,9 @@ for key in ['cover_letter', 'original_job_description', 'original_personal_histo
     if key not in st.session_state:
         st.session_state[key] = ""
         
+if 'enable_research' not in st.session_state:
+    st.session_state['enable_research'] = True
+        
 if 'has_generated' not in st.session_state:
     st.session_state['has_generated'] = False
     
@@ -40,7 +43,8 @@ def update_cover_letter():
                     job_description=st.session_state.get('original_job_description', ''),
                     personal_history=st.session_state.get('original_personal_history', ''),
                     feedback=feedback,
-                    tone=st.session_state.get('original_tone', 'Enthusiastic')
+                    tone=st.session_state.get('original_tone', 'Enthusiastic'),
+                    research_company='enable_research' in st.session_state and st.session_state['enable_research']
                 )
                 
                 # Print for debugging
@@ -100,6 +104,18 @@ def main():
                                     value=os.getenv("DEEPSEEK_API_KEY", ""))
             os.environ["DEEPSEEK_API_KEY"] = api_key
             model_name = "deepseek-chat"
+            
+        # Web search API keys for company research
+        st.header("Company Research Configuration")
+        enable_research = st.checkbox("Enable Company Research", value=st.session_state['enable_research'], 
+                                    help="Automatically research company information from the web to personalize your cover letter")
+        st.session_state['enable_research'] = enable_research
+        
+        with st.expander("Search API Keys (Optional)"):
+            tavily_api_key = st.text_input("Tavily API Key (Optional)", type="password",
+                                        value=os.getenv("TAVILY_API_KEY", ""),
+                                        help="Tavily provides more accurate search results. Get a free key at tavily.com")
+            os.environ["TAVILY_API_KEY"] = tavily_api_key
         
         st.header("Tone Configuration")
         tone = st.selectbox(
@@ -191,11 +207,12 @@ def main():
                     # Set tone
                     selected_tone = custom_tone if tone == "Custom" else tone
                     
-                    # Generate cover letter
+                    # Generate cover letter with optional company research
                     cover_letter = generator.generate(
                         job_description=job_description,
                         personal_history=personal_history,
-                        tone=selected_tone
+                        tone=selected_tone,
+                        research_company=enable_research
                     )
                     
                     # Store the generated cover letter in session state
