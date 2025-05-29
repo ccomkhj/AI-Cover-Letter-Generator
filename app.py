@@ -5,6 +5,61 @@ from cover_letter_generator import CoverLetterGenerator
 from pathlib import Path
 from pdf_generator import generate_cover_letter_pdf
 
+# Initialize session state variables if they don't exist
+for key in ['cover_letter', 'original_job_description', 'original_personal_history', 
+           'original_tone', 'provider', 'model', 'updated_cover_letter', 'feedback_text']:
+    if key not in st.session_state:
+        st.session_state[key] = ""
+        
+if 'has_generated' not in st.session_state:
+    st.session_state['has_generated'] = False
+    
+if 'update_success' not in st.session_state:
+    st.session_state['update_success'] = False
+    
+if 'update_error' not in st.session_state:
+    st.session_state['update_error'] = ""
+
+# Function to update cover letter based on feedback
+def update_cover_letter():
+    # Get the feedback from the text area
+    feedback = st.session_state.get('feedback_text', '')
+    
+    if feedback.strip():
+        with st.spinner("Updating your cover letter..."):
+            try:
+                # Create generator instance with the same model as before
+                generator = CoverLetterGenerator(
+                    provider=st.session_state.get('provider', 'openai'),
+                    model=st.session_state.get('model', 'gpt-3.5-turbo')
+                )
+                
+                # Update cover letter based on feedback
+                updated_letter = generator.update_with_feedback(
+                    original_cover_letter=st.session_state.get('cover_letter', ''),
+                    job_description=st.session_state.get('original_job_description', ''),
+                    personal_history=st.session_state.get('original_personal_history', ''),
+                    feedback=feedback,
+                    tone=st.session_state.get('original_tone', 'Enthusiastic')
+                )
+                
+                # Print for debugging
+                print(f"Updated letter length: {len(updated_letter)}")
+                
+                # Store the updated cover letter
+                st.session_state['updated_cover_letter'] = updated_letter
+                # Set a flag to indicate update was successful
+                st.session_state['update_success'] = True
+                
+                # Force rerun to update the UI
+                st.rerun()
+            except Exception as e:
+                st.session_state['update_error'] = f"Error updating cover letter: {str(e)}"
+                print(f"Error in update_cover_letter: {str(e)}")
+    else:
+        # Set error message in session state
+        st.session_state['update_error'] = "Please provide feedback to update your cover letter"
+
 # Load environment variables
 load_dotenv()
 
@@ -143,7 +198,17 @@ def main():
                         tone=selected_tone
                     )
                     
-                    st.text_area("Your Cover Letter", value=cover_letter, height=500)
+                    # Store the generated cover letter in session state
+                    st.session_state['cover_letter'] = cover_letter
+                    st.session_state['original_job_description'] = job_description
+                    st.session_state['original_personal_history'] = personal_history
+                    st.session_state['original_tone'] = selected_tone
+                    st.session_state['provider'] = model_provider.lower().replace(" ", "_")
+                    st.session_state['model'] = model_name
+                    st.session_state['has_generated'] = True  # Flag to track if a letter has been generated
+                    
+                    # Clear any previously updated letter
+                    st.session_state['updated_cover_letter'] = ""
                     
                     # Download options
                     col1_download, col2_download = st.columns(2)
@@ -155,7 +220,8 @@ def main():
                             data=cover_letter,
                             file_name="cover_letter.txt",
                             mime="text/plain",
-                            use_container_width=True
+                            use_container_width=True,
+                            key="download_original_text_generation"
                         )
                     
                     with col2_download:
@@ -166,8 +232,102 @@ def main():
                             data=pdf_buffer,
                             file_name="cover_letter.pdf",
                             mime="application/pdf",
-                            use_container_width=True
+                            use_container_width=True,
+                            key="download_original_pdf_generation"
                         )
+                        
+        # Display the cover letter(s)
+        if st.session_state.get('has_generated', False):
+            st.subheader("Your Cover Letter")
+            
+            # Always show the original cover letter
+            st.markdown("### Original Cover Letter")
+            st.text_area("Original", value=st.session_state['cover_letter'], height=300, key="display_original")
+            
+            # Download options for original cover letter
+            col1_download, col2_download = st.columns(2)
+            
+            with col1_download:
+                # Text download option
+                st.download_button(
+                    label="Download Original as Text",
+                    data=st.session_state['cover_letter'],
+                    file_name="original_cover_letter.txt",
+                    mime="text/plain",
+                    use_container_width=True,
+                    key="download_original_text_display"
+                )
+            
+            with col2_download:
+                # PDF download option with nice formatting
+                pdf_buffer = generate_cover_letter_pdf(st.session_state['cover_letter'])
+                st.download_button(
+                    label="Download Original as PDF",
+                    data=pdf_buffer,
+                    file_name="original_cover_letter.pdf",
+                    mime="application/pdf",
+                    use_container_width=True,
+                    key="download_original_pdf_display"
+                )
+            
+            # If there's an updated version, show it too
+            if st.session_state.get('updated_cover_letter', ""):
+                st.markdown("### Updated Cover Letter")
+                st.text_area("Updated", value=st.session_state['updated_cover_letter'], height=300, key="display_updated")
+                
+                # Download options for updated cover letter
+                col1_updated, col2_updated = st.columns(2)
+                
+                with col1_updated:
+                    # Text download option
+                    st.download_button(
+                        label="Download Updated as Text",
+                        data=st.session_state['updated_cover_letter'],
+                        file_name="updated_cover_letter.txt",
+                        mime="text/plain",
+                        use_container_width=True,
+                        key="download_updated_text_display"
+                    )
+                
+                with col2_updated:
+                    # PDF download option with nice formatting
+                    pdf_buffer = generate_cover_letter_pdf(st.session_state['updated_cover_letter'])
+                    st.download_button(
+                        label="Download Updated as PDF",
+                        data=pdf_buffer,
+                        file_name="updated_cover_letter.pdf",
+                        mime="application/pdf",
+                        use_container_width=True,
+                        key="download_updated_pdf_display"
+                    )
+            
+            # Feedback section for refinement
+            st.subheader("Refine Your Cover Letter")
+            st.write("Not satisfied? Provide feedback to update your cover letter.")
+            
+            # Display success message if update was successful
+            if st.session_state.get('update_success', False):
+                st.success("✅ Cover letter updated successfully!")
+                # Reset the flag
+                st.session_state['update_success'] = False
+                
+            # Display error message if there was an error
+            if st.session_state.get('update_error', ""):
+                st.error(st.session_state['update_error'])
+                # Reset the error message
+                st.session_state['update_error'] = ""
+                
+            # Use session state for the feedback text area
+            st.text_area(
+                "What would you like to change or improve?",
+                placeholder="For example: 'Make it more concise', 'Add more details about my Python skills', 'Focus more on leadership experience'...",
+                height=100,
+                key="feedback_text"
+            )
+            
+            # Create a button that calls the update function directly
+            if st.button("Update Cover Letter", use_container_width=True, key="update_button"):
+                update_cover_letter()
 
 if __name__ == "__main__":
     main()

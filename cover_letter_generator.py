@@ -91,3 +91,56 @@ class CoverLetterGenerator:
             "job_description": job_description,
             "personal_history": personal_history
         })
+        
+    def update_with_feedback(self, original_cover_letter, job_description, personal_history, feedback, tone="Enthusiastic"):
+        """
+        Update an existing cover letter based on user feedback.
+        
+        Args:
+            original_cover_letter (str): The previously generated cover letter
+            job_description (str): The original job description text
+            personal_history (str): The original personal history/resume text
+            feedback (str): User feedback on how to improve the cover letter
+            tone (str): The desired tone for the cover letter
+            
+        Returns:
+            str: The updated cover letter
+        """
+        # Create the prompt template for updating with feedback
+        update_prompt = ChatPromptTemplate.from_messages([
+            ("system", self._create_system_prompt(tone) + " You are refining an existing cover letter based on specific feedback."),
+            ("human", """
+            I have a cover letter that I'd like to improve based on specific feedback.
+            
+            # Original Job Description:
+            {job_description}
+            
+            # My Personal History/Resume:
+            {personal_history}
+            
+            # Current Cover Letter:
+            {original_cover_letter}
+            
+            # My Feedback for Improvement:
+            {feedback}
+            
+            Please update the cover letter according to my feedback while maintaining:
+            1. The relevant match between my skills and the job requirements
+            2. A professional and engaging tone
+            3. A concise structure (still under 300 words)
+            4. The same overall format
+            
+            Return ONLY the complete updated cover letter without explanations or notes.
+            """)
+        ])
+        
+        # Create the chain
+        update_chain = update_prompt | self.llm | StrOutputParser()
+        
+        # Generate the updated cover letter
+        return update_chain.invoke({
+            "original_cover_letter": original_cover_letter,
+            "job_description": job_description,
+            "personal_history": personal_history,
+            "feedback": feedback
+        })
