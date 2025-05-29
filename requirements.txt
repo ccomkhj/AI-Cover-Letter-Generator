@@ -5,3 +5,4 @@ langchain-google-genai>=0.0.6
 langchain-deepseek>=0.0.1
 streamlit>=1.30.0
 python-dotenv>=1.0.0
+reportlab>=4.0.0

@@ -3,6 +3,7 @@ import streamlit as st
 from dotenv import load_dotenv
 from cover_letter_generator import CoverLetterGenerator
 from pathlib import Path
+from pdf_generator import generate_cover_letter_pdf
 
 # Load environment variables
 load_dotenv()
@@ -48,7 +49,7 @@ def main():
         st.header("Tone Configuration")
         tone = st.selectbox(
             "Select Tone",
-            options=["Professional", "Enthusiastic", "Confident", "Concise", "Custom"]
+            options=["Enthusiastic", "Confident", "Concise", "Custom"]
         )
         
         if tone == "Custom":
@@ -144,13 +145,29 @@ def main():
                     
                     st.text_area("Your Cover Letter", value=cover_letter, height=500)
                     
-                    # Download option
-                    st.download_button(
-                        label="Download Cover Letter",
-                        data=cover_letter,
-                        file_name="cover_letter.txt",
-                        mime="text/plain"
-                    )
+                    # Download options
+                    col1_download, col2_download = st.columns(2)
+                    
+                    with col1_download:
+                        # Text download option
+                        st.download_button(
+                            label="Download as Text",
+                            data=cover_letter,
+                            file_name="cover_letter.txt",
+                            mime="text/plain",
+                            use_container_width=True
+                        )
+                    
+                    with col2_download:
+                        # PDF download option with nice formatting
+                        pdf_buffer = generate_cover_letter_pdf(cover_letter)
+                        st.download_button(
+                            label="Download as PDF",
+                            data=pdf_buffer,
+                            file_name="cover_letter.pdf",
+                            mime="application/pdf",
+                            use_container_width=True
+                        )
 
 if __name__ == "__main__":
     main()

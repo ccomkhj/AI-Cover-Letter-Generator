@@ -1,6 +1,7 @@
 # AI Cover Letter Generator
 
-A LangChain-based application that uses multiple LLM providers (OpenAI, Google Gemini, DeepSeek) to generate customized cover letters based on job descriptions and personal history.
+Are you tired of creating cover letter for each job application?
+This project is for you!
 
 ## Features
 

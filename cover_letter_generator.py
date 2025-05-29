@@ -35,10 +35,9 @@ class CoverLetterGenerator:
     
     def _create_system_prompt(self, tone):
         """Create a system prompt based on the specified tone."""
-        base_prompt = "You are an expert cover letter writer who crafts personalized and effective cover letters."
+        base_prompt = "You are an expert cover letter writer who crafts personalized and effective cover letters. Keep it informal and friendly."
         
         tone_prompts = {
-            "Professional": "Write in a formal, professional tone that showcases qualifications concisely.",
             "Enthusiastic": "Write with enthusiasm and passion that demonstrates excitement for the position.",
             "Confident": "Write with confidence and authority that emphasizes achievements and capabilities.",
             "Concise": "Write a brief but impactful cover letter that gets straight to the point."
@@ -50,7 +49,7 @@ class CoverLetterGenerator:
             # For custom tone or any other tone not in the predefined list
             return f"{base_prompt} Write in a {tone} tone that resonates with the employer."
     
-    def generate(self, job_description, personal_history, tone="Professional"):
+    def generate(self, job_description, personal_history, tone="Enthusiastic"):
         """
         Generate a cover letter based on the job description and personal history.
         
@@ -66,7 +65,7 @@ class CoverLetterGenerator:
         prompt = ChatPromptTemplate.from_messages([
             ("system", self._create_system_prompt(tone)),
             ("human", """
-            Please generate a professional cover letter for the job described below.
+            Please generate a cover letter for the job described below.
             
             # Job Description:
             {job_description}
@@ -75,13 +74,12 @@ class CoverLetterGenerator:
             {personal_history}
             
             Generate a well-structured cover letter that:
-            1. Begins with a professional greeting
-            2. Introduces me and my interest in the position
-            3. Highlights my relevant skills and experiences that match the job requirements
-            4. Explains why I'm a good fit for the role and the company
-            5. Concludes with a call to action and professional sign-off
+            1. Begin with eye-catching start. (Cut to the chase.)
+            2. Highlights my relevant skills and experiences that match the job requirements
+            3. Explains why I'm a good fit for the role and the company
+            4. Concludes with what I want to do with your company
             
-            The letter should be concise, engaging, and tailored specifically to this job opportunity.
+            The letter should be concise (less than 300 words), engaging, and tailored specifically to this job opportunity.
             """)
         ])
         
